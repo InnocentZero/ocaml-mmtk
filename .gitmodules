@@ -8,3 +8,6 @@
 	url = https://github.com/ocaml/winpthreads.git
 	shallow = true
 	branch = master
+[submodule "mmtk-core"]
+	path = mmtk-core
+	url = https://github.com/mmtk/mmtk-core
