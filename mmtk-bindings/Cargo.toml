@@ -1,0 +1,29 @@
+[package]
+name = "mmtk-ocaml"
+version = "0.0.1"
+authors = [" <>"]
+edition = "2021"
+
+[lib]
+name = "mmtk_ocaml"
+# be careful - LTO is only allowed for certain crate types
+# We know that cdylib should work for LTO.
+crate-type = ["staticlib"]
+
+[profile.release]
+# TODO(Isfarul): Does this work with staticlib?
+# lto = true
+
+[dependencies]
+# The hope is to eventually switch to a tagged version instead of relying on
+# a submodule, but some changes might be necessary to get this up and running
+# mmtk = "0.25.0"
+# mmtk = { git = "https://github.com/mmtk/mmtk-core.git", branch = "master" }
+mmtk = { path = "../mmtk-core" }
+libc = "0.2"
+atomic = "0.6"
+
+[features]
+default = []
+is_mmtk_object = ["mmtk/is_mmtk_object"]
+malloc_counted_size = ["mmtk/malloc_counted_size"]

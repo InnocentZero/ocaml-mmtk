@@ -1407,6 +1407,11 @@ runtime/caml/jumptbl.h : runtime/caml/instruct.h
 $(SAK): runtime/sak.c runtime/caml/misc.h runtime/caml/config.h
 	$(V_MKEXE)$(call SAK_BUILD,$@,$<)
 
+# Add mmtk-bindings build step here
+# TODO(Isfarul): Choose between debug and release builds?
+mmtk-bindings/target/debug/libmmtk_ocaml.a:
+	cd mmtk-bindings ; cargo build
+
 C_LITERAL = $(shell $(SAK) $(ENCODE_C_LITERAL) '$(1)')
 
 runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
@@ -1425,7 +1430,7 @@ runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A)
 runtime/ocamlruns$(EXE): runtime/prims.$(O) runtime/libcamlrun_non_shared.$(A)
 	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(BYTECCLIBS))
 
-runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS)
+runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS) mmtk-bindings/target/debug/libmmtk_ocaml.a
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
 runtime/libcamlrun_non_shared.$(A): $(libcamlrun_non_shared_OBJECTS)
@@ -1635,6 +1640,7 @@ clean::
 	rm -f runtime/domain_state.inc
 	rm -rf $(DEPDIR) runtime/winpthreads
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
+	cd mmtk-bindings ; cargo clean
 
 .PHONY: runtimeopt
 runtimeopt: stdlib/libasmrun.$(A)

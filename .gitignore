@@ -334,3 +334,9 @@ META
 /yacc/ocamlyacc
 /yacc/version.h
 /yacc/.gdb_history
+
+# ignore all rust build artefacts
+target/
+# ignote the build dir output for local builds and installs
+# This happens with ./configure --prefix=`pwd`/BUILD
+BUILD/
