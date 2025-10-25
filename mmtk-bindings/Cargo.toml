@@ -11,7 +11,7 @@ name = "mmtk_ocaml"
 crate-type = ["staticlib"]
 
 [profile.release]
-# TODO(Isfarul): Does this work with staticlib?
+# Ideally it should work, but I have disabled it for now
 # lto = true
 
 [dependencies]
