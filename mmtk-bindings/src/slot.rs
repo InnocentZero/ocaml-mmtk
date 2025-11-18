@@ -38,7 +38,7 @@ impl FieldSlot {
 impl Slot for FieldSlot {
     fn load(&self) -> Option<mmtk::util::ObjectReference> {
         if self.get() & 1 == 0 {
-            let addr = unsafe { Address::from_usize(self.get() >> 1) };
+            let addr = unsafe { Address::from_usize(self.get()) };
             ObjectReference::from_raw_address(addr)
         } else {
             None
@@ -46,7 +46,7 @@ impl Slot for FieldSlot {
     }
 
     fn store(&self, object: mmtk::util::ObjectReference) {
-        let tagged_addr = object.to_raw_address().as_usize() << 1;
+        let tagged_addr = object.to_raw_address().as_usize();
         self.store(tagged_addr);
     }
 }
@@ -94,7 +94,7 @@ impl TryFrom<FieldSlot> for Address {
     fn try_from(value: FieldSlot) -> Result<Self, Self::Error> {
         // TODO: Isfarul: Can this be ObjectReference instead?
         if value.get() & 1 == 0 {
-            Ok(unsafe { Address::from_usize(value.get() >> 1) })
+            Ok(unsafe { Address::from_usize(value.get()) })
         } else {
             Err("Tried to interpret an int as a reference")
         }
