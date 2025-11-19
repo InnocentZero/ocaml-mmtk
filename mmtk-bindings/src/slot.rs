@@ -13,8 +13,10 @@ use mmtk::{
 /// This may either be a tagged integer or a tagged
 /// pointer. They are discriminated by their LSB, which
 /// is 0 for a pointer and 1 for an integer.
-/// Note that this restricts the pointer's addressable space to
-/// 63 bits, and the integer's max range to 63 bits as well.
+/// Note that this forces the pointer to be 2 byte aligned.
+/// This is not a concern for OCaml's runtime, since the fields of an
+/// object which are pointers will always be word-aligned.
+/// The integer's max range is restricted to 63 bits as well.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(transparent)]
 pub struct FieldSlot {
@@ -105,7 +107,7 @@ unsafe impl Send for FieldSlot {}
 
 /// Memory slice type with empty implementations.
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
-// TODO: Isfarul: Is this correct?
+// TODO: Isfarul: Is this needed?
 pub struct UnimplementedMemorySlice<SL: Slot = FieldSlot>(PhantomData<SL>);
 
 /// Slot iterator for `UnimplementedMemorySlice`.
