@@ -29,6 +29,7 @@
 #include "caml/mlvalues.h"
 #include "caml/fiber.h"
 #include "caml/domain.h"
+#include "../mmtk-bindings/include/mmtk.h"
 
 CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 {
@@ -41,12 +42,15 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
       result = Atom (tag);
     }else{
       Caml_check_caml_state();
+      // TODO: Isfarul: Find this macro
       Alloc_small (result, wosize, tag, Alloc_small_enter_GC);
+      // mmtk_alloc()
       if (tag < No_scan_tag){
         for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
     }
   } else {
+      // TODO: Isfarul: Find this function
     result = caml_alloc_shr (wosize, tag);
     if (tag < No_scan_tag) {
       for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
