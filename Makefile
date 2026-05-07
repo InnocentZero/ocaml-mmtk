@@ -1407,9 +1407,9 @@ runtime/caml/jumptbl.h : runtime/caml/instruct.h
 $(SAK): runtime/sak.c runtime/caml/misc.h runtime/caml/config.h
 	$(V_MKEXE)$(call SAK_BUILD,$@,$<)
 
-# Add mmtk-bindings build step here
-# TODO(Isfarul): Choose between debug and release builds?
-mmtk-bindings/target/debug/libmmtk_ocaml.a:
+MMTK_RUNTIME_LIB = mmtk-bindings/target/debug/libmmtk_ocaml.a
+
+$(MMTK_RUNTIME_LIB):
 	cd mmtk-bindings ; cargo build
 
 C_LITERAL = $(shell $(SAK) $(ENCODE_C_LITERAL) '$(1)')
@@ -1424,25 +1424,29 @@ runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
 
 ## Runtime libraries and programs
 
-runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A)
+runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A) \
+  $(MMTK_RUNTIME_LIB)
 	$(V_MKEXE)$(MKEXE) -o $@ $^ $(BYTECCLIBS)
 
-runtime/ocamlruns$(EXE): runtime/prims.$(O) runtime/libcamlrun_non_shared.$(A)
+runtime/ocamlruns$(EXE): runtime/prims.$(O) runtime/libcamlrun_non_shared.$(A) \
+  $(MMTK_RUNTIME_LIB)
 	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(BYTECCLIBS))
 
-runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS) mmtk-bindings/target/debug/libmmtk_ocaml.a
+runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
 runtime/libcamlrun_non_shared.$(A): $(libcamlrun_non_shared_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
-runtime/ocamlrund$(EXE): runtime/prims.$(O) runtime/libcamlrund.$(A)
+runtime/ocamlrund$(EXE): runtime/prims.$(O) runtime/libcamlrund.$(A) \
+  $(MMTK_RUNTIME_LIB)
 	$(V_MKEXE)$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(BYTECCLIBS)
 
 runtime/libcamlrund.$(A): $(libcamlrund_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
-runtime/ocamlruni$(EXE): runtime/prims.$(O) runtime/libcamlruni.$(A)
+runtime/ocamlruni$(EXE): runtime/prims.$(O) runtime/libcamlruni.$(A) \
+  $(MMTK_RUNTIME_LIB)
 	$(V_MKEXE)$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(BYTECCLIBS)
 
 runtime/libcamlruni.$(A): $(libcamlruni_OBJECTS)
@@ -1451,7 +1455,7 @@ runtime/libcamlruni.$(A): $(libcamlruni_OBJECTS)
 runtime/libcamlrun_pic.$(A): $(libcamlrunpic_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
-runtime/libcamlrun_shared.$(SO): $(libcamlrunpic_OBJECTS)
+runtime/libcamlrun_shared.$(SO): $(libcamlrunpic_OBJECTS) $(MMTK_RUNTIME_LIB)
 	$(V_MKDLL)$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
 runtime/libasmrun.$(A): $(libasmrun_OBJECTS)

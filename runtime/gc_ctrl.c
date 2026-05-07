@@ -353,8 +353,8 @@ void caml_init_gc (void)
   #ifdef NATIVE_CODE
   caml_init_frame_descriptors();
   #endif
-  /* TODO(MMTk): initialize MMTk here before OCaml domains and heaps are
-     created. Add the mmtk_init call once its configuration path is ready. */
+  /* TODO(MMTk): Choose heap size and plan; pass as config option */
+  mmtk_init(1024 * 1024 * 1024, "immix");
   caml_init_domains(caml_params->max_domains,
                     caml_params->init_minor_heap_wsz);
   caml_init_gc_stats(caml_params->max_domains);
