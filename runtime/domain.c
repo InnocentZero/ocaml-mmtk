@@ -950,8 +950,14 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto alloc_main_stack_failure;
   }
 
-  /* TODO(MMTk): bind the MMTk mutator for this domain here, after the
-     domain state and initial OCaml stack have been created. */
+  struct stack_info *stack = domain_state->current_stack;
+
+  /* TODO(MMTk): These would change when there's effects/fibers/continuations! */
+  atomic_store_release(&domain_state->mmtk_stack, (uintnat)stack);
+  atomic_store_release(&domain_state->mmtk_stack_sp, (uintnat)stack->sp);
+
+  /* TODO(MMTk): See if more is needed? */
+  domain_state->mmtk_mutator = mmtk_bind_mutator((void *)domain_state);
 
   /* No remaining failure cases: domain creation is going to succeed,
    * so we can update globally-visible state without needing to unwind

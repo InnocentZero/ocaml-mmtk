@@ -26,28 +26,26 @@ impl Scanning<OCamlVM> for VMScanning {
         let tls = mutator.mutator_tls.0 .0.to_address();
 
         let mutators = MUTATORS.read().unwrap();
-        let MutatorState { base, size, .. } =
-            mutators.get(&tls).expect("mutator {tls} not registered!");
-        // TODO(MMTk): safety
-        // TODO(MMTk): memory ordering
-        let size = unsafe { (**size).load(Ordering::SeqCst) };
 
-        let mut stack_roots = vec![];
+        // TODO(MMTk): Work on the scanning
+        todo!("Look at fiber.c:405");
 
         log::debug!(
             "Scanning stack in mutator {:#?}",
             mutator as *mut Mutator<OCamlVM>
         );
-        log::debug!("Stack base {base}; stack size {size}");
-        for offset in 0..size {
-            let stack_addr = base.add(offset * mem::size_of::<*mut OCamlSlot>());
-            let root = unsafe { stack_addr.load() };
-            // TODO(MMTk): Remove
-            log::debug!("Root encountered: {root:#?}");
-            stack_roots.push(root);
-        }
+        // Stack base with mutator.mutator_tls->mmtk_stack (use a C helper)
+        // Stack sp with mutator.mutator_tls->mmtk_stack_sp (use a C helper)
+        // Apart from this, repeatedly go to parent stack again and again with Stack_parent(stack)
+        // log::debug!("Stack base {base}; stack size {size}");
+        // for offset in 0..size {
+        //     let stack_addr = base.add(offset * mem::size_of::<*mut OCamlSlot>());
+        //     let root = unsafe { stack_addr.load() };
+        //     log::trace!("Root encountered: {root:#?}");
+        //     stack_roots.push(root);
+        // }
 
-        factory.create_process_roots_work(stack_roots);
+        // factory.create_process_roots_work(stack_roots);
     }
 
     fn scan_vm_specific_roots(_tls: VMWorkerThread, mut factory: impl RootsWorkFactory<OCamlSlot>) {

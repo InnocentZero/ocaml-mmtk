@@ -62,6 +62,14 @@ DOMAIN_STATE(value*, gc_regs)
 /* Pointer to currently-used register bucket, or NULL.
    Documented in fiber.h. */
 
+DOMAIN_STATE(void*, mmtk_mutator)
+/* TODO(MMTk): This needs to be updated every time the stack changes.
+    I cannot just make the stack state atomic, it seems like a bunch of
+    places make assumptions about that being normal.
+*/
+DOMAIN_STATE(atomic_uintnat, mmtk_stack)
+DOMAIN_STATE(atomic_uintnat, mmtk_stack_sp)
+
 DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
 
 DOMAIN_STATE(struct mark_stack*, mark_stack)

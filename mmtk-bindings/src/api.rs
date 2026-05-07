@@ -2,8 +2,8 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 use crate::mmtk;
-use crate::OCamlVM;
 use crate::OCamlSlot;
+use crate::OCamlVM;
 use crate::Roots;
 use crate::GLOBAL_ROOTS;
 use crate::MUTATORS;
@@ -18,7 +18,6 @@ use mmtk::Mutator;
 use std::ffi::c_char;
 use std::ffi::CStr;
 use std::mem;
-use std::sync::atomic::AtomicUsize;
 
 // This file exposes MMTk Rust API to the native code. This is not an exhaustive list of all the APIs.
 // Most commonly used APIs are listed in https://docs.mmtk.io/api/mmtk/memory_manager/index.html. The binding can expose them here.
@@ -56,17 +55,11 @@ pub fn mmtk_init(heap_size: u32, plan: *const c_char) {
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_bind_mutator(
-    tls: VMMutatorThread,
-    base: Address,
-    size: *mut AtomicUsize,
-) -> *mut Mutator<OCamlVM> {
+pub extern "C" fn mmtk_bind_mutator(tls: VMMutatorThread) -> *mut Mutator<OCamlVM> {
     let mut mutator = memory_manager::bind_mutator(mmtk(), tls);
     MUTATORS.write().unwrap().insert(
         tls.0 .0.to_address(),
         crate::MutatorState {
-            size,
-            base,
             mutator: mutator.as_mut() as *mut Mutator<OCamlVM>,
         },
     );
@@ -80,9 +73,7 @@ pub extern "C" fn mmtk_destroy_mutator(mutator: *mut Mutator<OCamlVM>) {
         .write()
         .unwrap()
         .remove(unsafe { &mutator.as_mut().unwrap().mutator_tls.0 .0.to_address() });
-    // notify mmtk-core about destroyed mutator
     memory_manager::destroy_mutator(unsafe { &mut *mutator });
-    // turn the ptr back to a box, and let Rust properly reclaim it
     let _ = unsafe { Box::from_raw(mutator) };
 }
 
@@ -103,7 +94,7 @@ pub extern "C" fn mmtk_alloc(
     {
         semantics = AllocationSemantics::Los;
     }
-    // TODO(MMTk): Track if the control is with MMTk in MUTATORS
+    // TODO(MMTk): Track if the control of `mutator` is with MMTk in MUTATORS
     let alloc_addr =
         memory_manager::alloc::<OCamlVM>(unsafe { &mut *mutator }, size, align, offset, semantics);
     alloc_addr.add(mem::size_of::<OCamlSlot>())
