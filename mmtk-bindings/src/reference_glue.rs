@@ -1,4 +1,4 @@
-use crate::DummyVM;
+use crate::OCamlVM;
 use mmtk::util::opaque_pointer::VMWorkerThread;
 use mmtk::util::ObjectReference;
 use mmtk::vm::ReferenceGlue;
@@ -6,7 +6,7 @@ use mmtk::vm::ReferenceGlue;
 pub struct VMReferenceGlue {}
 
 // Documentation: https://docs.mmtk.io/api/mmtk/vm/reference_glue/trait.ReferenceGlue.html
-impl ReferenceGlue<DummyVM> for VMReferenceGlue {
+impl ReferenceGlue<OCamlVM> for VMReferenceGlue {
     type FinalizableType = ObjectReference;
 
     fn set_referent(_reference: ObjectReference, _referent: ObjectReference) {

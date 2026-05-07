@@ -1,7 +1,10 @@
-use std::sync::OnceLock;
+use std::collections::HashMap;
+use std::sync::{OnceLock, RwLock};
+use std::sync::atomic::AtomicUsize;
 
+use lazy_static::lazy_static;
 use mmtk::vm::VMBinding;
-use mmtk::MMTK;
+use mmtk::{MMTK, Mutator};
 
 pub mod active_plan;
 pub mod api;
@@ -12,14 +15,13 @@ pub mod scanning;
 pub mod slot;
 
 pub type OCamlSlot = crate::slot::FieldSlot;
-// TODO: Isfarul: Change this to a custom implementation
 pub type OCamlSlice = crate::slot::UnimplementedMemorySlice;
 
 #[derive(Default)]
-pub struct DummyVM;
+pub struct OCamlVM;
 
 // Documentation: https://docs.mmtk.io/api/mmtk/vm/trait.VMBinding.html
-impl VMBinding for DummyVM {
+impl VMBinding for OCamlVM {
     type VMObjectModel = object_model::VMObjectModel;
     type VMScanning = scanning::VMScanning;
     type VMCollection = collection::VMCollection;
@@ -34,7 +36,8 @@ impl VMBinding for DummyVM {
 
 use mmtk::util::{Address, ObjectReference};
 
-impl DummyVM {
+// TODO(MMTk): Is this needed
+impl OCamlVM {
     pub fn object_start_to_ref(start: Address) -> ObjectReference {
         // Safety: start is the allocation result, and it should not be zero with an offset.
         unsafe {
@@ -45,8 +48,29 @@ impl DummyVM {
     }
 }
 
-pub static SINGLETON: OnceLock<Box<MMTK<DummyVM>>> = OnceLock::new();
+pub static SINGLETON: OnceLock<Box<MMTK<OCamlVM>>> = OnceLock::new();
 
-fn mmtk() -> &'static MMTK<DummyVM> {
+fn mmtk() -> &'static MMTK<OCamlVM> {
     SINGLETON.get().unwrap()
+}
+
+struct Roots(ObjectReference);
+
+// TODO(MMTk): what else to use here?
+// TODO(MMTk): Add an enum tracking thread status = runtime sleep, runtime active, mmtk sleep,
+// mmtk active
+#[derive(Debug)]
+struct MutatorState {
+    size: *mut AtomicUsize,
+    base: Address,
+    mutator: *mut Mutator<OCamlVM>,
+}
+
+// TODO(MMTk): Safety
+unsafe impl Sync for MutatorState {}
+unsafe impl Send for MutatorState {}
+
+lazy_static! {
+    static ref GLOBAL_ROOTS: RwLock<Vec<Roots>> = RwLock::new(Vec::new());
+    static ref MUTATORS: RwLock<HashMap<Address, MutatorState>> = RwLock::new(HashMap::new());
 }

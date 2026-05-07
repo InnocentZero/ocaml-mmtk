@@ -1,4 +1,4 @@
-use crate::DummyVM;
+use crate::{OCamlVM, OCamlSlot};
 use mmtk::util::copy::{CopySemantics, GCWorkerCopyContext};
 use mmtk::util::{Address, ObjectReference};
 use mmtk::vm::*;
@@ -8,14 +8,14 @@ pub struct VMObjectModel {}
 /// This is the offset from the allocation result to the object reference for the object.
 /// For bindings that this offset is not a constant, you can implement the calculation in the method `ref_to_object_start`, and
 /// remove this constant.
-pub const OBJECT_REF_OFFSET: usize = 0;
+pub const OBJECT_REF_OFFSET: usize = std::mem::size_of::<OCamlSlot>();
 
 // This is the offset from the object reference to the object header.
 // This value is used in `ref_to_header` where MMTk loads header metadata from.
-pub const OBJECT_HEADER_OFFSET: usize = 0;
+pub const OBJECT_HEADER_OFFSET: usize = std::mem::size_of::<OCamlSlot>();
 
 // Documentation: https://docs.mmtk.io/api/mmtk/vm/object_model/trait.ObjectModel.html
-impl ObjectModel<DummyVM> for VMObjectModel {
+impl ObjectModel<OCamlVM> for VMObjectModel {
     // Global metadata
 
     const GLOBAL_LOG_BIT_SPEC: VMGlobalLogBitSpec = VMGlobalLogBitSpec::side_first();
@@ -39,7 +39,7 @@ impl ObjectModel<DummyVM> for VMObjectModel {
     fn copy(
         _from: ObjectReference,
         _semantics: CopySemantics,
-        _copy_context: &mut GCWorkerCopyContext<DummyVM>,
+        _copy_context: &mut GCWorkerCopyContext<OCamlVM>,
     ) -> ObjectReference {
         unimplemented!()
     }
@@ -48,8 +48,11 @@ impl ObjectModel<DummyVM> for VMObjectModel {
         unimplemented!()
     }
 
-    fn get_current_size(_object: ObjectReference) -> usize {
-        unimplemented!()
+    fn get_current_size(object: ObjectReference) -> usize {
+        let header_addr = object.to_header::<OCamlVM>();
+        // TODO(MMTk): safety
+        let header: usize = unsafe { header_addr.load() };
+        (header >> 10) * std::mem::size_of::<OCamlSlot>()
     }
 
     fn get_size_when_copied(object: ObjectReference) -> usize {
@@ -77,6 +80,7 @@ impl ObjectModel<DummyVM> for VMObjectModel {
         object.to_raw_address().sub(OBJECT_REF_OFFSET)
     }
 
+    // TODO(MMTk): Make this dynamic for infix objects
     fn ref_to_header(object: ObjectReference) -> Address {
         object.to_raw_address().sub(OBJECT_HEADER_OFFSET)
     }

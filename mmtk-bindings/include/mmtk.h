@@ -10,19 +10,29 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef void* MMTk_Mutator;
-typedef void* MMTk_Builder;
+
+// TODO(MMTk): Fix STW logic
+extern void world_has_stopped();
+
+// TODO(MMTk): Fix STW logic
+extern bool wants_to_stop();
 
 // Initialize an MMTk instance
-extern void mmtk_init(MMTk_Builder builder);
+extern void mmtk_init(uint32_t heap_size, char *plan);
 
 // Request MMTk to create a new mutator for the given `tls` thread
-extern MMTk_Mutator mmtk_bind_mutator(void* tls);
+// The stack base does not need to be atomic, since it never changes
+// stack_size_ptr is atomic to ensure cross thread visibility on Rust's side
+// since MMTk can spawn many threads, all of them must to an atomic load to
+// properly see the value written by the mutator thread
+extern MMTk_Mutator mmtk_bind_mutator(void* tls, void *stack_base, _Atomic size_t *stack_size_ptr);
 
 // Reclaim mutator that is no longer needed
 extern void mmtk_destroy_mutator(MMTk_Mutator mutator);
@@ -38,6 +48,7 @@ extern void* mmtk_alloc(MMTk_Mutator mutator,
 extern void mmtk_post_alloc(MMTk_Mutator mutator,
                             void* refer,
                             int bytes,
+                            int tag,
                             int allocator);
 
 // Run the main loop for a GC worker. Does not return
@@ -61,18 +72,11 @@ extern bool mmtk_is_live_object(void* object);
 // Return if object pointed to by `object` will never move
 extern bool mmtk_will_never_move(void* object);
 
-// Return if the address is an object in MMTk heap.
-// Only available when the feature is_mmtk_object is enabled.
-extern bool mmtk_is_mmtk_object(void* addr);
-
-// Return if the object is in any MMTk space.
-extern bool mmtk_is_in_mmtk_spaces(void* object);
-
 // Return if the address pointed to by `addr` is in memory that is mapped by MMTk
 extern bool mmtk_is_mapped_address(void* addr);
 
 // Request MMTk to trigger a GC. Note that this may not actually trigger a GC
-extern void mmtk_handle_user_collection_request(void* tls);
+extern int mmtk_handle_user_collection_request(void* tls);
 
 // Add a reference to the list of weak references
 extern void mmtk_add_weak_candidate(void* ref);
@@ -80,42 +84,13 @@ extern void mmtk_add_weak_candidate(void* ref);
 // Add a reference to the list of soft references
 extern void mmtk_add_soft_candidate(void* ref);
 
-// Add a reference to the list of phantom references
-extern void mmtk_add_phantom_candidate(void* ref);
-
 // Generic hook to allow benchmarks to be harnessed
 extern void mmtk_harness_begin(void* tls);
 
 // Generic hook to allow benchmarks to be harnessed
 extern void mmtk_harness_end();
 
-// Create an MMTKBuilder
-extern MMTk_Builder mmtk_create_builder();
-
-// Process an MMTk option. Return true if option was processed successfully
-extern bool mmtk_process(MMTk_Builder builder, char* name, char* value);
-
-// Return the starting address of MMTk's heap
-extern void* mmtk_starting_heap_address();
-
-// Return the ending address of MMTk's heap
-extern void* mmtk_last_heap_address();
-
-// Standard malloc functions
-extern void* mmtk_malloc(size_t size);
-extern void* mmtk_calloc(size_t num, size_t size);
-extern void* mmtk_realloc(void* addr, size_t size);
-extern void* mmtk_free(void* addr);
-
-// Counted versions of the malloc functions. The allocation size will be ounted into the MMTk heap.
-// Only available when the feature malloc_counted_size is enabled.
-extern void* mmtk_counted_malloc(size_t size);
-extern void* mmtk_counted_calloc(size_t num, size_t size);
-extern void* mmtk_realloc_with_old_size(void* addr, size_t size, size_t old_size);
-extern void* mmtk_free_with_size(void* addr, size_t old_size);
-// Get the number of active bytes in malloc.
-extern size_t mmtk_get_malloc_bytes();
-
+extern void mmtk_register_global_root(void *ref);
 #ifdef __cplusplus
 }
 #endif

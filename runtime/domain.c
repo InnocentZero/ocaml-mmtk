@@ -71,6 +71,7 @@ typedef cpuset_t cpu_set_t;
 #include "caml/startup_aux.h"
 #include "caml/sync.h"
 #include "caml/weak.h"
+#include "../mmtk-bindings/include/mmtk.h"
 
 /* Check that the domain_state structure was laid out without padding,
    since the runtime assumes this in computing offsets */
@@ -948,6 +949,9 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   if(domain_state->current_stack == NULL) {
     goto alloc_main_stack_failure;
   }
+
+  /* TODO(MMTk): bind the MMTk mutator for this domain here, after the
+     domain state and initial OCaml stack have been created. */
 
   /* No remaining failure cases: domain creation is going to succeed,
    * so we can update globally-visible state without needing to unwind
