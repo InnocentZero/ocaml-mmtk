@@ -1052,17 +1052,22 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
 */
 CAMLexport void caml_minor_collection (void)
 {
+  /*
   caml_request_minor_gc();
   caml_handle_gc_interrupt();
+  */
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
 {
+
+  /* Disable GC, MMTk handles GC internally
   if (Caml_check_gc_interrupt(Caml_state)) {
     CAMLparam1(extra_root);
     caml_handle_gc_interrupt();
     CAMLdrop;
   }
+  */
   return extra_root;
 }
 
